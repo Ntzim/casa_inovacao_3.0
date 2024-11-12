@@ -7,7 +7,6 @@ from io import BytesIO
 if 'sorteados_geral' not in st.session_state:
     st.session_state.sorteados_geral = pd.DataFrame(columns=['Name', 'ID', 'Cota'])
 
-# Função para realizar sorteio por grupo
 # Função para realizar sorteio por grupo com verificação rigorosa de duplicados
 def realizar_sorteio_por_grupo(df, quantidade_por_grupo, curso):
     ganhadores_por_grupo = {}
@@ -30,25 +29,27 @@ def realizar_sorteio_por_grupo(df, quantidade_por_grupo, curso):
             ganhadores = df_grupo.sample(n=quantidade_real, random_state=random.randint(0, 10000))
             
             # Preenche com ampla concorrência se faltarem vagas
-            if quantidade_real < quantidade:
+            if quantidade_real < quantidade and not df_ampla_concorrencia.empty:
                 vagas_restantes = quantidade - quantidade_real
-                ganhadores_extra = df_ampla_concorrencia.sample(n=vagas_restantes, random_state=random.randint(0, 10000))
+                ganhadores_extra = df_ampla_concorrencia.sample(n=min(vagas_restantes, len(df_ampla_concorrencia)), random_state=random.randint(0, 10000))
                 df_ampla_concorrencia = df_ampla_concorrencia.drop(ganhadores_extra.index)
                 ganhadores = pd.concat([ganhadores, ganhadores_extra])
             
             ganhadores_por_grupo[grupo] = ganhadores
         else:
             st.warning(f"Não há candidatos no grupo '{grupo}'. Vagas preenchidas pela ampla concorrência.")
-            ganhadores_extra = df_ampla_concorrencia.sample(n=quantidade, random_state=random.randint(0, 10000))
-            df_ampla_concorrencia = df_ampla_concorrencia.drop(ganhadores_extra.index)
-            ganhadores_por_grupo[grupo] = ganhadores_extra
+            if not df_ampla_concorrencia.empty:
+                ganhadores_extra = df_ampla_concorrencia.sample(n=min(quantidade, len(df_ampla_concorrencia)), random_state=random.randint(0, 10000))
+                df_ampla_concorrencia = df_ampla_concorrencia.drop(ganhadores_extra.index)
+                ganhadores_por_grupo[grupo] = ganhadores_extra
     
     # Sorteio de ampla concorrência com as vagas restantes
     total_ampla_concorrencia = len(df_ampla_concorrencia)
     quantidade_ampla = quantidade_por_grupo['Ampla Concorrência']
     quantidade_real = min(quantidade_ampla, total_ampla_concorrencia)
-    ganhadores_ampla = df_ampla_concorrencia.sample(n=quantidade_real, random_state=random.randint(0, 10000))
-    ganhadores_por_grupo['Ampla Concorrência'] = ganhadores_ampla
+    if total_ampla_concorrencia > 0:
+        ganhadores_ampla = df_ampla_concorrencia.sample(n=quantidade_real, random_state=random.randint(0, 10000))
+        ganhadores_por_grupo['Ampla Concorrência'] = ganhadores_ampla
     
     # Verificação final para garantir a quantidade exata de sorteados por grupo
     ganhadores_df = pd.concat(ganhadores_por_grupo.values()).drop_duplicates(subset=['ID'])
@@ -59,20 +60,16 @@ def realizar_sorteio_por_grupo(df, quantidade_por_grupo, curso):
         candidatos_restantes = df[~df['ID'].isin(ganhadores_df['ID'])]
         
         if not candidatos_restantes.empty:
-            ganhadores_extra = candidatos_restantes.sample(n=vagas_faltantes, random_state=random.randint(0, 10000))
+            ganhadores_extra = candidatos_restantes.sample(n=min(vagas_faltantes, len(candidatos_restantes)), random_state=random.randint(0, 10000))
             ganhadores_df = pd.concat([ganhadores_df, ganhadores_extra])
         else:
             st.warning("Não há candidatos suficientes para completar o sorteio com 27 ganhadores.")
 
     # Adiciona os ganhadores à lista global de sorteados
     ganhadores_df['Curso'] = curso
-    st.session_state.sorteados_geral = pd.concat([st.session_state.sorteados_geral, ganhadores_df[['Name', 'ID', 'Cota']]]).drop_duplicates(subset=['ID'])
+    st.session_state.sorteados_geral = pd.concat([st.session_state.sorteados_geral, ganhadores_df[['Name', 'ID', 'Cota', 'Curso']]]).drop_duplicates(subset=['ID'])
     
     return ganhadores_df
-
-
-
-
 
 # Função para baixar o arquivo Excel
 def baixar_excel(df, filename):
@@ -84,22 +81,22 @@ def baixar_excel(df, filename):
 
 # Configuração da aplicação
 st.title("Sorteio Edital | Casa da Inovação")
-st.image('casa-inovacao-3.0/imagens/ID_CASA_INOVACAO 1.png')
+st.image(r'C:\Users\natan\Documents\Besouro\ID_CASA_INOVACAO 1.png')
 
 # Seletores de curso
 curso_selecionado = st.selectbox("Selecione o curso", [
-    'Criação de Aplicativos | Manhã',
-    'Programação de Games | Teens | Manhã',
-    'Introdução à Robótica | Kids | Manhã',
-    'Inclusão Digital | +50 anos | Manhã',
-    'Criação de Aplicativos | Tarde',
-    'Programação de Games | Teens | Tarde',
-    'Programação de Games | Kids | Tarde',
-    'Digital Influencer | Tarde',
-    'Introdução à Robótica | Kids | Tarde',
-    'Introdução à Robótica | Teens | Tarde',
-    'Introdução ao Mundo Digital e Pacote Office | Noite',
-    'Marketing Digital | Noite',
+    'INCLUSÃO DIGITAL 50+  | Manhã',
+    'CRIAÇÃO DE GAMES KIDS | Manhã',
+    'INTRODUÇÃO À ROBÓTICA KIDS | Manhã',
+    'INTRODUÇÃO À ROBÓTICA TEENS  | Manhã',
+    'CRIAÇÃO DE APLICATIVOS | Tarde',
+    'CRIAÇÃO DE GAMES KIDS| Tarde',
+    'DIGITAL INFLUENCER| Tarde',
+    'CRIAÇÃO DE GAMES TEEENS | Tarde',
+    'INTRODUÇÃO À ROBÓTICA KIDS| Tarde',
+    'CRIAÇÃO DE APLICATIVOS 18+| Tarde',
+    'INTRODUÇÃO AO MUNDO DIGITAL E PACOTE OFFICE | Noite',
+    'MARKETING DIGITAL | Noite',
 ])
 
 # Upload do arquivo Excel
@@ -117,18 +114,13 @@ if uploaded_file is not None:
 
     # Exibe aviso se algum candidato foi removido
     if not candidatos_ja_sorteados.empty:
-        # Cria uma lista formatada apenas com os IDs dos candidatos
         lista_candidatos = "\n".join([f"ID: {row['ID']}, Nome: {row['Name']}" for index, row in candidatos_ja_sorteados.iterrows()])
         
-        # Exibe o aviso com os candidatos em linhas separadas
-        # st.warning(f"Os seguintes candidatos já foram sorteados anteriormente e foram removidos deste sorteio:\n{lista_candidatos}")
-    
     # Mostrar os primeiros registros do arquivo carregado
     st.write(f"Primeiros registros do arquivo ({curso_selecionado}):")
     st.dataframe(df.head())
 
     # Definição das quantidades de vagas por grupo
-
     quantidade_por_grupo = {
             'Ampla Concorrência': 15,
             'Negro ou Pardo': 3,
@@ -145,7 +137,7 @@ if uploaded_file is not None:
             st.write(f"**{curso_selecionado}** - Lista de ganhadores:")
             st.dataframe(ganhadores)
 
-            # Adicionar botão para baixar o Excel
+            # Adicionar botão para baixar o Excel dos ganhadores do curso atual
             excel_data = baixar_excel(ganhadores, 'ganhadores.xlsx')
             st.download_button(
                 label="Baixar lista de ganhadores",
@@ -156,8 +148,12 @@ if uploaded_file is not None:
         else:
             st.warning("Nenhum ganhador foi selecionado. Verifique se há candidatos nos grupos especificados.")
     
-    # Adicionar botão para baixar a lista geral de sorteados
-if curso_selecionado == 'Marketing Digital | Noite':
+    # Botão para baixar a lista geral de sorteados
     if st.button("Finalizar Sorteios e Baixar Lista Geral de Sorteados"):
-        excel_data = baixar_excel(st.session_state.sorteados_geral, 'sorteados_geral.xlsx')
-       
+        excel_data_geral = baixar_excel(st.session_state.sorteados_geral, 'sorteados_geral.xlsx')
+        st.download_button(
+            label="Baixar lista geral de sorteados",
+            data=excel_data_geral,
+            file_name='sorteados_geral.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
