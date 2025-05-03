@@ -94,7 +94,7 @@ curso_selecionado = st.selectbox("Selecione o curso", [
     'DIGITAL INFLUENCER| Tarde',
     'CRIAÇÃO DE GAMES TEEENS | Tarde',
     'INTRODUÇÃO À ROBÓTICA KIDS| Tarde',
-    'CRIAÇÃO DE APLICATIVOS 18+| Tarde',
+    'INCLUSÃO DIGITAL 50+| Tarde',
     'INTRODUÇÃO AO MUNDO DIGITAL E PACOTE OFFICE | Noite',
     'MARKETING DIGITAL | Noite',
 ])
