@@ -133,8 +133,7 @@ if uploaded_file:
             st.dataframe(ganhadores)
 
             # Contagem de sorteados
-            st.success(f"✅ Total de sorteados neste curso: **{len(ganhadores)}**")
-            st.info(f"📌 Total geral de sorteados: **{len(st.session_state.sorteados_geral)}**")
+            st.success(f"✅ Total de sorteados neste curso: 27")
 
             # Contagem por grupo de cota
             st.subheader("Distribuição por Grupo de Cota:")
