@@ -87,6 +87,9 @@ def baixar_excel(df, filename):
 st.title("Sorteio Edital | Casa da Inovação")
 st.image('casa-inovacao-3.0/imagens/ID_CASA_INOVACAO 1.png')
 
+# Exibe o total acumulado de sorteados
+st.info(f"🎉 Total geral de sorteados até agora: **{len(st.session_state.sorteados_geral)}**")
+
 # Curso selecionado
 curso_selecionado = st.selectbox("Selecione o curso", [
     'INCLUSÃO DIGITAL 50+  | Manhã',
@@ -128,9 +131,20 @@ if uploaded_file:
         if not ganhadores.empty:
             st.write(f"**{curso_selecionado}** - Lista de ganhadores:")
             st.dataframe(ganhadores)
+
+            # Contagem de sorteados
+            st.success(f"✅ Total de sorteados neste curso: **{len(ganhadores)}**")
+            st.info(f"📌 Total geral de sorteados: **{len(st.session_state.sorteados_geral)}**")
+
+            # Contagem por grupo de cota
+            st.subheader("Distribuição por Grupo de Cota:")
+            contagem_por_grupo = ganhadores['Cota'].value_counts()
+            for grupo, qtd in contagem_por_grupo.items():
+                st.write(f"- {grupo}: {qtd} sorteado(s)")
+
             excel_data = baixar_excel(ganhadores, 'ganhadores.xlsx')
             st.download_button(
-                label="Baixar lista de ganhadores",
+                label="📥 Baixar lista de ganhadores",
                 data=excel_data,
                 file_name=f'{curso_selecionado.replace(" | ", "_").replace(" ", "_")}_ganhadores.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -138,10 +152,10 @@ if uploaded_file:
         else:
             st.warning("Nenhum ganhador foi selecionado.")
 
-    if st.button("Finalizar Sorteios e Baixar Lista Geral de Sorteados"):
+    if st.button("📦 Finalizar Sorteios e Baixar Lista Geral de Sorteados"):
         excel_data_geral = baixar_excel(st.session_state.sorteados_geral, 'sorteados_geral.xlsx')
         st.download_button(
-            label="Baixar lista geral de sorteados",
+            label="📥 Baixar lista geral de sorteados",
             data=excel_data_geral,
             file_name='sorteados_geral.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
