@@ -87,7 +87,6 @@ def baixar_excel(df, filename):
 st.title("Sorteio Edital | Casa da Inovação")
 st.image('casa-inovacao-3.0/imagens/ID_CASA_INOVACAO 1.png')
 
-
 # Curso selecionado
 curso_selecionado = st.selectbox("Selecione o curso", [
     'INCLUSÃO DIGITAL 50+  | Manhã',
@@ -128,12 +127,12 @@ if uploaded_file:
         ganhadores = realizar_sorteio_por_grupo(df, quantidade_por_grupo, curso_selecionado)
         if not ganhadores.empty:
             st.write(f"**{curso_selecionado}** - Lista de ganhadores:")
-            st.dataframe(ganhadores)
+            ganhadores_com_index = ganhadores.reset_index(drop=True)
+            ganhadores_com_index.index += 1
+            st.dataframe(ganhadores_com_index, use_container_width=True)
 
-            # Contagem de sorteados
             st.success(f"✅ Total de sorteados neste curso: 27")
 
-            # Contagem por grupo de cota
             st.subheader("Distribuição por Grupo de Cota:")
             contagem_por_grupo = ganhadores['Cota'].value_counts()
             for grupo, qtd in contagem_por_grupo.items():
@@ -150,6 +149,10 @@ if uploaded_file:
             st.warning("Nenhum ganhador foi selecionado.")
 
     if st.button("📦 Finalizar Sorteios e Baixar Lista Geral de Sorteados"):
+        lista_geral_com_index = st.session_state.sorteados_geral.reset_index(drop=True)
+        lista_geral_com_index.index += 1
+        st.dataframe(lista_geral_com_index, use_container_width=True)
+
         excel_data_geral = baixar_excel(st.session_state.sorteados_geral, 'sorteados_geral.xlsx')
         st.download_button(
             label="📥 Baixar lista geral de sorteados",
