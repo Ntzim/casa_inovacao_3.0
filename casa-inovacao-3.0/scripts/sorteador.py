@@ -87,8 +87,6 @@ def baixar_excel(df, filename):
 st.title("Sorteio Edital | Casa da Inovação")
 st.image('casa-inovacao-3.0/imagens/ID_CASA_INOVACAO 1.png')
 
-# Exibe o total acumulado de sorteados
-st.info(f"🎉 Total geral de sorteados até agora: **{len(st.session_state.sorteados_geral)}**")
 
 # Curso selecionado
 curso_selecionado = st.selectbox("Selecione o curso", [
